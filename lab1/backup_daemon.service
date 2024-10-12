@@ -1,0 +1,10 @@
+[Unit]
+Description=Backup
+
+[Service]
+ExecStart=/usr/bin/backup_daemon
+StandardOutput=syslog
+Restart=always
+
+[Install]
+WantedBy=default.target
