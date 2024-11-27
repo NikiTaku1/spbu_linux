@@ -12,7 +12,7 @@ class Monitor:
     def __init__(self, root):
         self.root = root
         self.root.title("Traffic Monitor")
-        self.root.geometry("950x600")
+        self.root.geometry("950x350")
 
         self.ip_count = {}
         self.sus_ips = set()
@@ -20,13 +20,13 @@ class Monitor:
         self.mon_act = False
 
         frame_all = tk.Frame(root)
-        frame_all.grid(row=0, column=0, columnspan=3, padx=5, pady=5, sticky="n")
+        frame_all.grid(row=0, column=0, padx=5, pady=5, sticky="n")
 
         frame_sus = tk.Frame(root)
-        frame_sus.grid(row=1, column=0, padx=5, pady=5, sticky="n")
+        frame_sus.grid(row=0, column=1, padx=5, pady=5, sticky="n")
 
         frame_block = tk.Frame(root)
-        frame_block.grid(row=1, column=1, padx=5, pady=5, sticky="n")
+        frame_block.grid(row=0, column=2, padx=5, pady=5, sticky="n")
 
 
         tk.Label(frame_all, text="Received").pack(side="top")
@@ -79,11 +79,6 @@ class Monitor:
 
         self.unblock_button = tk.Button(frame_block, text="Unblock traffic", command=self.unblock_ip)
         self.unblock_button.pack(fill="x", padx=0, pady=5)
-
-        root.grid_columnconfigure(0, weight=1)
-        root.grid_columnconfigure(1, weight=1)
-        root.grid_rowconfigure(0, weight=1)
-        root.grid_rowconfigure(1, weight=1)
 
     def packets(self, packet):
         if packet.haslayer(scapy.IP):
@@ -166,7 +161,7 @@ class Monitor:
             subprocess.run(["sudo", "iptables", "-D", "INPUT", "-s", ip, "-j", "DROP"], check=True)
             print(f"IP unblocked: {ip}")
         except subprocess.CalledProcessError as e:
-            print(f"Unblock error {ip}: {e}")
+            print(f"Unblock {ip}: {e}")
 
 
 if __name__ == "__main__":
