@@ -4,140 +4,172 @@ from tkinter import ttk
 import threading
 import subprocess
 
-class NetworkTrafficMonitor:
+class Monitor:
+
+    #################
+    ### Interface ###
+
     def __init__(self, root):
         self.root = root
-        self.root.title("Traffic Monitoring System")
-        self.root.geometry("950x350")
+        self.root.title("Traffic Monitor")
+        self.root.geometry("950x600")
 
-        self.ip_counter = {}
-        self.suspicious_ips = set()
-        self.blocked_ips = set()
-        self.monitoring_active = False
+        self.ip_count = {}
+        self.sus_ips = set()
+        self.block_ips = set()
+        self.mon_act = False
 
-        all_ips_frame = tk.Frame(root)
-        all_ips_frame.grid(row=0, column=0, padx=5, pady=5, sticky="n")
+        frame_all = tk.Frame(root)
+        frame_all.grid(row=0, column=0, columnspan=3, padx=5, pady=5, sticky="n")
 
-        suspicious_ips_frame = tk.Frame(root)
-        suspicious_ips_frame.grid(row=0, column=1, padx=5, pady=5, sticky="n")
+        frame_sus = tk.Frame(root)
+        frame_sus.grid(row=1, column=0, padx=5, pady=5, sticky="n")
 
-        blocked_ips_frame = tk.Frame(root)
-        blocked_ips_frame.grid(row=0, column=2, padx=5, pady=5, sticky="n")
+        frame_block = tk.Frame(root)
+        frame_block.grid(row=1, column=1, padx=5, pady=5, sticky="n")
 
-        tk.Label(all_ips_frame, text="All Incoming IPs").pack(side="top")
-        self.all_ips_table = ttk.Treeview(all_ips_frame, columns=("IP", "Port", "Size"), show="headings", height=10)
-        self.all_ips_table.heading("IP", text="IP Address")
-        self.all_ips_table.heading("Port", text="Port")
-        self.all_ips_table.heading("Size", text="Size")
-        self.all_ips_table.column("IP", width = 150, stretch = tk.NO)
-        self.all_ips_table.column("Port", width = 150, stretch = tk.NO)
-        self.all_ips_table.column("Size", width = 150, stretch = tk.NO)
-        self.all_ips_table.pack(side="top", fill="both", expand=True)
 
-        button_frame = tk.Frame(all_ips_frame)
+        tk.Label(frame_all, text="Received").pack(side="top")
+        self.table_all = ttk.Treeview(frame_all, columns=("IP", "Port", "Size"), show="headings", height=10)
+
+        self.table_all.heading("IPs", text="IP Address")
+        self.table_all.heading("Ports", text="Port")
+        self.table_all.heading("Packets", text="Size")
+        self.table_all.column("IPs", width = 150, stretch = tk.NO)
+        self.table_all.column("Ports", width = 150, stretch = tk.NO)
+        self.table_all.column("Packets", width = 150, stretch = tk.NO)
+
+        self.table_all.pack(side="top", fill="both", expand=True)
+
+
+        button_frame = tk.Frame(frame_all)
         button_frame.pack(side="top", fill="x")
 
-        self.start_button = tk.Button(button_frame, text="Start", command=self.start_monitoring)
+        self.start_button = tk.Button(button_frame, text="Start", command=self.begin_mon)
         self.start_button.pack(side="left", fill="x", expand = True, padx=5)
 
-        self.stop_button = tk.Button(button_frame, text="Stop", command=self.stop_monitoring)
+        self.stop_button = tk.Button(button_frame, text="Stop", command=self.stop_mon)
         self.stop_button.pack(side="right", fill="x", expand = True, padx=5)
 
-        tk.Label(suspicious_ips_frame, text="Suspicious IPs").pack(side="top")
-        self.suspicious_ips_table = ttk.Treeview(suspicious_ips_frame, columns=("IP", "Reason"), show="headings", height=10)
-        self.suspicious_ips_table.heading("IP", text="IP Address")
-        self.suspicious_ips_table.heading("Reason", text="Reason")
-        self.suspicious_ips_table.column("IP", width = 150, stretch = tk.NO)
-        self.suspicious_ips_table.column("Reason", width = 150, stretch = tk.NO)
-        self.suspicious_ips_table.pack(side="top", fill="both", expand=True)
 
-        self.block_button = tk.Button(suspicious_ips_frame, text="Block", command=self.block_ip)
+        tk.Label(frame_sus, text="Flagged IPs").pack(side="top")
+        self.table_sus = ttk.Treeview(frame_sus, columns=("IP", "Reason"), show="headings", height=10)
+
+        self.table_sus.heading("IPs", text="IP Address")
+        self.table_sus.heading("Reason", text="Reason")
+        self.table_sus.column("IPs", width = 150, stretch = tk.NO)
+        self.table_sus.column("Reason", width = 150, stretch = tk.NO)
+
+        self.table_sus.pack(side="top", fill="both", expand=True)
+
+
+
+        self.block_button = tk.Button(frame_sus, text="Block traffic", command=self.block_ip)
         self.block_button.pack(fill="x", padx=0, pady=5)
 
-        tk.Label(blocked_ips_frame, text="Blocked IPs").pack(side="top")
-        self.blocked_ips_table = ttk.Treeview(blocked_ips_frame, columns=("IP",), show="headings", height=10)
-        self.blocked_ips_table.heading("IP", text="IP Address")
-        self.blocked_ips_table.column("IP", width = 150, stretch = tk.NO)
-        self.blocked_ips_table.pack(side="top", fill="both", expand=True)
 
-        self.unblock_button = tk.Button(blocked_ips_frame, text="Unblock", command=self.unblock_ip)
+        tk.Label(frame_block, text="Blocked IPs").pack(side="top")
+        self.table_block = ttk.Treeview(frame_block, columns=("IP",), show="headings", height=10)
+
+        self.table_block.heading("IPs", text="IP Address")
+        self.table_block.column("IPs", width = 150, stretch = tk.NO)
+
+        self.table_block.pack(side="top", fill="both", expand=True)
+
+
+        self.unblock_button = tk.Button(frame_block, text="Unblock traffic", command=self.unblock_ip)
         self.unblock_button.pack(fill="x", padx=0, pady=5)
 
-    def packet_callback(self, packet):
+        root.grid_columnconfigure(0, weight=1)
+        root.grid_columnconfigure(1, weight=1)
+        root.grid_rowconfigure(0, weight=1)
+        root.grid_rowconfigure(1, weight=1)
+
+    def packets(self, packet):
         if packet.haslayer(scapy.IP):
-            ip_address = packet[scapy.IP].src
-            packet_size = len(packet)
+            ip = packet[scapy.IP].src
+            size = len(packet)
 
-            if ip_address not in self.ip_counter:
-                self.ip_counter[ip_address] = 0
+            if ip not in self.ip_count:
+                self.ip_count[ip] = 0
 
-            self.ip_counter[ip_address] += packet_size
+            self.ip_count[ip] += size
 
-            if self.ip_counter[ip_address] > 200:
-                if ip_address not in self.suspicious_ips:
-                    self.suspicious_ips.add(ip_address)
-                    self.suspicious_ips_table.insert("", "end", values=(ip_address, "Packet size exceeded"))
+            if self.ip_count[ip] > 200:
+                if ip not in self.sus_ips:
+                    self.sus_ips.add(ip)
+                    self.table_sus.insert("", "end", values=(ip, "Packet size error"))
 
-            if ip_address not in self.blocked_ips:
-                self.all_ips_table.insert("", "end", values=(ip_address, packet[scapy.IP].sport, packet_size))
+            if ip not in self.block_ips:
+                self.table_all.insert("", "end", values=(ip, packet[scapy.IP].sport, size))
 
-    def start_monitoring(self):
-        self.suspicious_ips_table.delete(*self.suspicious_ips_table.get_children())
-        self.all_ips_table.delete(*self.all_ips_table.get_children())
+    def begin_mon(self):
+        self.table_sus.delete(*self.table_sus.get_children())
+        self.table_all.delete(*self.table_all.get_children())
 
-        self.monitoring_active = True
+        self.mon_act = True
         self.start_button.config(state="disabled")
         self.stop_button.config(state="normal")
 
-        monitoring_thread = threading.Thread(target=self.monitor_traffic)
+        monitoring_thread = threading.Thread(target=self.start_mon)
         monitoring_thread.daemon = True
         monitoring_thread.start()
-        print("Monitoring started")
+        print("Started.")
 
-    def monitor_traffic(self):
-        scapy.sniff(prn=self.packet_callback, store=0)
+        ### /Interface ###
+        ##################
 
-    def stop_monitoring(self):
-        self.monitoring_active = False
+
+
+
+
+
+
+
+    def mon(self):
+        scapy.sniff(prn=self.packets, store=0)
+
+    def stop_mon(self):
+        self.mon_act = False
         self.start_button.config(state="normal")
         self.stop_button.config(state="disabled")
-        print("Monitoring stopped")
+        print("Stopped.")
 
     def block_ip(self):
-        selected_item = self.suspicious_ips_table.selection()
+        selected_item = self.table_sus.selection()
         if selected_item:
-            ip_address = self.suspicious_ips_table.item(selected_item[0])['values'][0]
-            if ip_address not in self.blocked_ips:
-                self.blocked_ips.add(ip_address)
-                self.blocked_ips_table.insert("", "end", values=(ip_address,))
-                self.add_iptables_rule(ip_address)
-                self.suspicious_ips_table.delete(selected_item)
+            ip = self.table_sus.item(selected_item[0])['values'][0]
+            if ip not in self.block_ips:
+                self.block_ips.add(ip)
+                self.table_block.insert("", "end", values=(ip,))
+                self.add_ip(ip)
+                self.table_sus.delete(selected_item)
 
     def unblock_ip(self):
-        selected_item = self.blocked_ips_table.selection()
+        selected_item = self.table_block.selection()
         if selected_item:
-            ip_address = self.blocked_ips_table.item(selected_item[0])['values'][0]
-            if ip_address in self.blocked_ips:
-                self.blocked_ips.remove(ip_address)
-                self.remove_iptables_rule(ip_address)
-                self.blocked_ips_table.delete(selected_item)
+            ip = self.table_block.item(selected_item[0])['values'][0]
+            if ip in self.block_ips:
+                self.block_ips.remove(ip)
+                self.remove_ip(ip)
+                self.table_block.delete(selected_item)
 
-    def add_iptables_rule(self, ip_address):
+    def add_ip(self, ip):
         try:
-            subprocess.run(["sudo", "iptables", "-A", "INPUT", "-s", ip_address, "-j", "DROP"], check=True)
-            print(f"IP address blocked with iptables: {ip_address}")
+            subprocess.run(["sudo", "iptables", "-A", "INPUT", "-s", ip, "-j", "DROP"], check=True)
+            print(f"IP blocked: {ip}")
         except subprocess.CalledProcessError as e:
-            print(f"Error blocking IP address {ip_address}: {e}")
+            print(f"Block error {ip}: {e}")
 
-    def remove_iptables_rule(self, ip_address):
+    def remove_ip(self, ip):
         try:
-            subprocess.run(["sudo", "iptables", "-D", "INPUT", "-s", ip_address, "-j", "DROP"], check=True)
-            print(f"IP address unblocked with iptables: {ip_address}")
+            subprocess.run(["sudo", "iptables", "-D", "INPUT", "-s", ip, "-j", "DROP"], check=True)
+            print(f"IP unblocked: {ip}")
         except subprocess.CalledProcessError as e:
-            print(f"Error unblocking IP address {ip_address}: {e}")
+            print(f"Unblock error {ip}: {e}")
 
 
 if __name__ == "__main__":
     root = tk.Tk()
-    monitor = NetworkTrafficMonitor(root)
+    monitor = Monitor(root)
     root.mainloop()
