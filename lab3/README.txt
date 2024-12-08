@@ -1,6 +1,6 @@
 sudo python3 system_monitor.py
 
-creates logs and updates every n seconds
+creates logs and updates every 20 seconds
 
 sudo python3 system_log_search.py
 
