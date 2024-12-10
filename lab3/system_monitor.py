@@ -2,6 +2,7 @@ import psutil
 import time
 import logging
 import json
+
 from tabulate import tabulate
 
 logging.basicConfig(filename="system_audit.log", level=logging.INFO,
@@ -38,6 +39,8 @@ def monitor_processes():
     count = 0
     headers = ["PID", "Name", "Username", "Command Line"]
     while True:
+        with open("system_audit.log", "w") as f:
+            pass
         process_data = []
         for proc in psutil.process_iter(['pid', 'name', 'username', 'cmdline']):
             try:
